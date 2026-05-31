@@ -104,18 +104,18 @@ export default function LibraryScreen() {
   };
 
   const handleCreateBookAndGoal = async () => {
-    if (!newBookTitle.trim() || !newBookTotalPages.trim()) {
-      Alert.alert('Missing Fields', 'Please fill in Title and Total Pages.');
-      return;
-    }
-
-    const pages = parseInt(newBookTotalPages);
-    if (isNaN(pages) || pages <= 0) {
-      Alert.alert('Invalid Input', 'Total pages must be a valid positive number.');
-      return;
-    }
-
     try {
+      if (!newBookTitle.trim() || !newBookTotalPages.trim()) {
+        Alert.alert('Missing Fields', 'Please fill in Title and Total Pages.');
+        return;
+      }
+
+      const pages = parseInt(newBookTotalPages);
+      if (isNaN(pages) || pages <= 0) {
+        Alert.alert('Invalid Input', 'Total pages must be a valid positive number.');
+        return;
+      }
+
       setLoading(true);
       const bookId = Math.random().toString(36).substring(7);
       
@@ -123,7 +123,7 @@ export default function LibraryScreen() {
         id: bookId,
         title: newBookTitle,
         author: newBookAuthor || 'Unknown Author',
-        filePath: selectedFile?.uri || 'local-file-placeholder',
+        filePath: selectedFile?.uri || '',
         fileType: newBookFileType,
         totalPages: pages,
         currentPage: 0,
@@ -150,13 +150,13 @@ export default function LibraryScreen() {
       setNewBookAuthor('');
       setNewBookTotalPages('150');
       setSelectedFile(null);
-      setTargetDate('');
+      setIsCountingPages(false);
 
-      Alert.alert('Success', 'Book imported and completion goal set successfully.');
+      Alert.alert('Success', 'Book imported successfully.');
       await loadData();
     } catch (e) {
-      console.error(e);
-      Alert.alert('Error', 'Failed to import book.');
+      console.error('Import error:', e);
+      Alert.alert('Error', 'Failed to import book. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -539,6 +539,20 @@ export default function LibraryScreen() {
           </View>
         </SafeAreaView>
       </Modal>
+      {/* Hidden PDF for automatic page counting */}
+      {selectedFile && newBookFileType === 'pdf' && isCountingPages && (
+        <View style={{ position: 'absolute', opacity: 0, width: 10, height: 10, left: -999 }}>
+          <Pdf
+            source={{ uri: selectedFile.uri }}
+            onLoadComplete={(numberOfPages) => {
+              setNewBookTotalPages(numberOfPages.toString());
+              setIsCountingPages(false);
+            }}
+            onError={() => setIsCountingPages(false)}
+            style={{ width: 10, height: 10 }}
+          />
+        </View>
+      )}
     </SafeAreaView>
   );
 }

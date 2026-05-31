@@ -57,12 +57,6 @@
       "enabled": false,
       "checkAutomatically": "NEVER"
     },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "36737d80-9d65-4959-8c6d-9a479e22f804"
-      }
-    },
     "owner": "semer101"
   }
 }
