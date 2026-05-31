@@ -450,6 +450,21 @@ export default function LibraryScreen() {
             </Text>
             <View style={styles.readerControls}>
               <TouchableOpacity
+                onPress={async () => {
+                  if (activeBook) {
+                    const books = await StorageService.getBooks();
+                    const bIdx = books.findIndex(b => b.id === activeBook.id);
+                    if (bIdx >= 0) {
+                      books[bIdx].currentPage = readerCurrentPage;
+                      await StorageService.saveBook(books[bIdx]);
+                      Alert.alert('Bookmark Saved', `Successfully bookmarked page ${readerCurrentPage}`);
+                    }
+                  }
+                }}
+                style={[styles.fontSizeControlBtn, { backgroundColor: colors.backgroundSelected }]}>
+                <Text style={[styles.controlText, { color: colors.accent }]}>🔖 Bookmark</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 onPress={() => setReaderFontSize(Math.max(12, readerFontSize - 2))}
                 style={[styles.fontSizeControlBtn, { backgroundColor: colors.backgroundSelected }]}>
                 <Text style={[styles.controlText, { color: colors.text }]}>A-</Text>

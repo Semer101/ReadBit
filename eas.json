@@ -7,6 +7,9 @@
     "preview": {
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "ENABLE_PROGUARD": "true"
       }
     },
     "production": {
