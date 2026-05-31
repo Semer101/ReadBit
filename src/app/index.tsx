@@ -14,12 +14,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import Pdf from 'react-native-pdf';
 import { StorageService, Book, Goal, Streak } from '../services/storage';
 import { AccountabilityService } from '../services/accountability';
 import { SupabaseService } from '../services/supabase';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { NotificationService } from '../services/notifications';
+import { PdfReader } from '../components/pdf-reader';
 
 const { width } = Dimensions.get('window');
 
@@ -495,18 +495,16 @@ export default function LibraryScreen() {
 
           {/* Body content */}
           {activeBook?.fileType === 'pdf' ? (
-            <Pdf
-              source={{ uri: activeBook.filePath }}
+            <PdfReader
+              uri={activeBook.filePath}
               page={readerCurrentPage}
               onPageChanged={(page, numberOfPages) => {
                 setReaderCurrentPage(page);
                 setReaderTotalPages(numberOfPages);
               }}
-              onError={(error) => {
-                console.log(error);
-                Alert.alert('Error', 'Failed to load PDF file.');
+              onLoadComplete={(numberOfPages) => {
+                setReaderTotalPages(numberOfPages);
               }}
-              style={{ flex: 1, backgroundColor: readerTheme === 'light' ? '#F9FAFB' : '#111827' }}
             />
           ) : (
             <ScrollView contentContainerStyle={styles.readerScroll}>
@@ -545,14 +543,14 @@ export default function LibraryScreen() {
           <ActivityIndicator size="large" color="#FFF" />
           <Text style={{ color: '#FFF', marginTop: 10 }}>Analyzing PDF...</Text>
           {selectedFile && (
-            <Pdf
-              source={{ uri: selectedFile.uri }}
+            <PdfReader
+              uri={selectedFile.uri}
+              page={1}
+              onPageChanged={() => {}}
               onLoadComplete={(numberOfPages) => {
                 setNewBookTotalPages(numberOfPages.toString());
                 setIsCountingPages(false);
               }}
-              onError={() => setIsCountingPages(false)}
-              style={{ width: 1, height: 1, opacity: 0 }}
             />
           )}
         </View>

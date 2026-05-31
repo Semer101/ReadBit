@@ -6,11 +6,7 @@
     },
     "preview": {
       "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease"
-      },
-      "env": {
-        "ENABLE_PROGUARD": "true"
+        "buildType": "apk"
       }
     },
     "production": {
