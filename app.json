@@ -37,6 +37,16 @@
             "imageWidth": 76
           }
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "-keep class com.shockwave.pdfium.** { *; } -keep class com.shockwave.pdfium.util.** { *; }"
+          }
+        }
       ]
     ],
     "experiments": {
