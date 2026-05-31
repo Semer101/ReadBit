@@ -10,8 +10,10 @@
     "ios": {
       "icon": "./assets/expo.icon"
     },
+    "jsEngine": "hermes",
     "android": {
       "package": "com.readbit.app",
+      "jsEngine": "hermes",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

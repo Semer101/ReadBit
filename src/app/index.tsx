@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import Pdf from 'react-native-pdf';
 import { StorageService, Book, Goal, Streak } from '../services/storage';
 import { AccountabilityService } from '../services/accountability';
 import { SupabaseService } from '../services/supabase';
@@ -33,13 +35,15 @@ export default function LibraryScreen() {
   const [newBookAuthor, setNewBookAuthor] = useState('');
   const [newBookTotalPages, setNewBookTotalPages] = useState('150');
   const [newBookFileType, setNewBookFileType] = useState<'epub' | 'pdf'>('epub');
-  const [targetDate, setTargetDate] = useState(''); // YYYY-MM-DD
+  const [targetDate, setTargetDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
 
   // Active Reader states
   const [readerVisible, setReaderVisible] = useState(false);
   const [activeBook, setActiveBook] = useState<Book | null>(null);
   const [readerCurrentPage, setReaderCurrentPage] = useState(1);
+  const [readerTotalPages, setReaderTotalPages] = useState(1);
   const [readerFontSize, setReaderFontSize] = useState(16);
   const [readerTheme, setReaderTheme] = useState<'light' | 'dark'>('light');
   const [sessionStartTime, setSessionStartTime] = useState<number>(0);
@@ -87,7 +91,8 @@ export default function LibraryScreen() {
         const parts = nameWithoutExt.split(' - ');
         setNewBookTitle(parts[0] || file.name);
         setNewBookAuthor(parts[1] || 'Unknown Author');
-        setNewBookFileType(file.name.endsWith('.pdf') ? 'pdf' : 'epub');
+        const isPdf = file.name.toLowerCase().endsWith('.pdf');
+        setNewBookFileType(isPdf ? 'pdf' : 'epub');
       }
     } catch (err) {
       console.error('Document picker error:', err);
@@ -95,21 +100,14 @@ export default function LibraryScreen() {
   };
 
   const handleCreateBookAndGoal = async () => {
-    if (!newBookTitle.trim() || !newBookTotalPages.trim() || !targetDate.trim()) {
-      Alert.alert('Missing Fields', 'Please fill in Title, Total Pages, and Target Completion Date.');
+    if (!newBookTitle.trim() || !newBookTotalPages.trim()) {
+      Alert.alert('Missing Fields', 'Please fill in Title and Total Pages.');
       return;
     }
 
     const pages = parseInt(newBookTotalPages);
     if (isNaN(pages) || pages <= 0) {
       Alert.alert('Invalid Input', 'Total pages must be a valid positive number.');
-      return;
-    }
-
-    // Validate target date format
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(targetDate)) {
-      Alert.alert('Invalid Date Format', 'Please enter date in YYYY-MM-DD format.');
       return;
     }
 
@@ -131,7 +129,7 @@ export default function LibraryScreen() {
       const newGoal: Goal = {
         id: Math.random().toString(36).substring(7),
         bookId,
-        targetDate: targetDate,
+        targetDate: targetDate.toISOString().split('T')[0],
         startPage: 0,
         currentPage: 0,
         totalPages: pages,
@@ -242,7 +240,7 @@ export default function LibraryScreen() {
               // Set default target completion date to 30 days from now
               const d = new Date();
               d.setDate(d.getDate() + 30);
-              setTargetDate(d.toISOString().split('T')[0]);
+              setTargetDate(d);
               setAddBookModalVisible(true);
             }}>
             <Text style={styles.addButtonText}>+ Import Book</Text>
@@ -387,14 +385,38 @@ export default function LibraryScreen() {
               onChangeText={setNewBookTotalPages}
             />
 
-            <Text style={[styles.fieldLabel, { color: colors.text }]}>Target Completion Date (YYYY-MM-DD)</Text>
-            <TextInput
-              style={[styles.input, { borderColor: colors.backgroundSelected, color: colors.text }]}
-              placeholder="e.g. 2026-06-30"
-              placeholderTextColor={colors.textSecondary}
-              value={targetDate}
-              onChangeText={setTargetDate}
-            />
+            <Text style={[styles.fieldLabel, { color: colors.text }]}>Target Completion Date</Text>
+            <TouchableOpacity
+              style={[styles.input, { borderColor: colors.backgroundSelected, justifyContent: 'center' }]}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text style={{ color: colors.text }}>{targetDate.toDateString()}</Text>
+            </TouchableOpacity>
+
+            {showDatePicker && (
+              <DateTimePicker
+                value={targetDate}
+                mode="date"
+                display="default"
+                minimumDate={new Date()}
+                onChange={(event, selectedDate) => {
+                  setShowDatePicker(false);
+                  if (selectedDate) setTargetDate(selectedDate);
+                }}
+              />
+            )}
+
+            {/* Hidden PDF for automatic page counting */}
+            {selectedFile && newBookFileType === 'pdf' && (
+              <View style={{ height: 0, width: 0, opacity: 0 }}>
+                <Pdf
+                  source={{ uri: selectedFile.uri }}
+                  onLoadComplete={(numberOfPages) => {
+                    setNewBookTotalPages(numberOfPages.toString());
+                  }}
+                />
+              </View>
+            )}
 
             <View style={styles.modalButtonsRow}>
               <TouchableOpacity
@@ -446,21 +468,30 @@ export default function LibraryScreen() {
           </View>
 
           {/* Body content */}
-          <ScrollView contentContainerStyle={styles.readerScroll}>
-            <Text style={[styles.readerContentText, { fontSize: readerFontSize, color: readerTheme === 'light' ? '#374151' : '#D1D5DB' }]}>
-              {activeBook?.fileType === 'epub' 
-                ? `Chapter ${Math.ceil(readerCurrentPage / 10)}: Section ${readerCurrentPage}\n\n` +
+          {activeBook?.fileType === 'pdf' ? (
+            <Pdf
+              source={{ uri: activeBook.filePath }}
+              page={readerCurrentPage}
+              onPageChanged={(page, numberOfPages) => {
+                setReaderCurrentPage(page);
+                setReaderTotalPages(numberOfPages);
+              }}
+              onError={(error) => {
+                console.log(error);
+                Alert.alert('Error', 'Failed to load PDF file.');
+              }}
+              style={{ flex: 1, backgroundColor: readerTheme === 'light' ? '#F9FAFB' : '#111827' }}
+            />
+          ) : (
+            <ScrollView contentContainerStyle={styles.readerScroll}>
+              <Text style={[styles.readerContentText, { fontSize: readerFontSize, color: readerTheme === 'light' ? '#374151' : '#D1D5DB' }]}>
+                {`Chapter ${Math.ceil(readerCurrentPage / 10)}: Section ${readerCurrentPage}\n\n` +
                   `This is simulated content parsed from your EPUB file: ${activeBook?.title}.\n\n` +
-                  `ReadBit utilizes native wrapper classes to manage offline text. It features adjustable text sizes, light and dark themes, and dynamic progress bookmarking. Turning pages will instantly update your local e-reader state.\n\n` +
                   `Consistency is the key to building any reading habit. The Accountability Engine is currently monitoring this session, and your daily reading pacing adjusts automatically based on your customized target completion dates.`
-                : `Page ${readerCurrentPage} of ${activeBook?.totalPages}\n\n` +
-                  `[Simulated Document Render: ${activeBook?.title}]\n\n` +
-                  `PDF documents are optimized for high performance with automatic viewport bookmarking.\n\n` +
-                  `We make sure page turns render instantly (in under 0.5s) to guarantee high performance and low latency. Adjust your text scale or customize background themes on demand.\n\n` +
-                  `Ensure you reach your daily page target today to maintain your consecutive reading streak. Happy reading!`
-              }
-            </Text>
-          </ScrollView>
+                }
+              </Text>
+            </ScrollView>
+          )}
 
           {/* Footer Controls */}
           <View style={[styles.readerFooter, { borderTopColor: readerTheme === 'light' ? '#E5E7EB' : '#374151' }]}>

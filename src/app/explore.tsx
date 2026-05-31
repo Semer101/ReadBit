@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
+import { Calendar } from 'react-native-calendars';
 import { StorageService, ReadingSession } from '../services/storage';
 import { supabase, SupabaseService, isSupabaseConfigured } from '../services/supabase';
 import { StatsService, ReadingStats } from '../services/stats';
@@ -35,9 +37,14 @@ export default function ExploreScreen() {
   const [isRegistering, setIsRegistering] = useState(false);
 
   useEffect(() => {
-    loadSessionsAndStats();
     checkUserSession();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadSessionsAndStats();
+    }, [])
+  );
 
   const checkUserSession = async () => {
     if (!supabase) return;
@@ -158,6 +165,19 @@ export default function ExploreScreen() {
   const last7Days = getLast7DaysData();
   const maxPages = Math.max(...last7Days.map((d) => d.dayPages), 10);
 
+  // Get marked dates for the streak calendar
+  const getMarkedDates = () => {
+    const marked: any = {};
+    sessions.forEach(session => {
+      marked[session.readDate] = {
+        selected: true,
+        selectedColor: colors.accent,
+        textColor: '#FFF'
+      };
+    });
+    return marked;
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -216,6 +236,27 @@ export default function ExploreScreen() {
           </View>
         </View>
 
+        {/* Section: Reading Calendar */}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Reading Consistency</Text>
+        <View style={[styles.chartCard, { backgroundColor: colors.backgroundElement, padding: 0, overflow: 'hidden' }]}>
+          <Calendar
+            theme={{
+              backgroundColor: colors.backgroundElement,
+              calendarBackground: colors.backgroundElement,
+              textSectionTitleColor: colors.textSecondary,
+              selectedDayBackgroundColor: colors.accent,
+              selectedDayTextColor: '#ffffff',
+              todayTextColor: colors.accent,
+              dayTextColor: colors.text,
+              textDisabledColor: colors.backgroundSelected,
+              monthTextColor: colors.text,
+              indicatorColor: colors.accent,
+              arrowColor: colors.accent,
+            }}
+            markedDates={getMarkedDates()}
+          />
+        </View>
+
         {/* Section: Themes */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>App Theme</Text>
         <View style={[styles.accountCard, { backgroundColor: colors.backgroundElement }]}>
@@ -250,16 +291,6 @@ export default function ExploreScreen() {
 
         <View style={[styles.accountCard, { backgroundColor: colors.backgroundElement }]}>
           <View style={[styles.syncStatusHeader, { borderBottomColor: colors.backgroundSelected }]}>
-            <Text style={[styles.syncStatusText, { color: colors.textSecondary }]}>
-              Backend Mode:{' '}
-              <Text
-                style={{
-                  fontWeight: 'bold',
-                  color: isSupabaseConfigured ? '#10B981' : '#F59E0B',
-                }}>
-                {isSupabaseConfigured ? 'Supabase Connected' : 'Offline / Local Only'}
-              </Text>
-            </Text>
             <TouchableOpacity style={[styles.syncBtn, { backgroundColor: colors.backgroundSelected }]} onPress={handleSyncNow}>
               <Text style={[styles.syncBtnText, { color: colors.accent }]}>🔄 Sync Now</Text>
             </TouchableOpacity>
