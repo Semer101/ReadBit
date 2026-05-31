@@ -8,6 +8,9 @@
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease"
+      },
+      "env": {
+        "ENABLE_PROGUARD": "true"
       }
     },
     "production": {

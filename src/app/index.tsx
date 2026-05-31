@@ -539,20 +539,24 @@ export default function LibraryScreen() {
           </View>
         </SafeAreaView>
       </Modal>
-      {/* Hidden PDF for automatic page counting */}
-      {selectedFile && newBookFileType === 'pdf' && isCountingPages && (
-        <View style={{ position: 'absolute', opacity: 0, width: 10, height: 10, left: -999 }}>
-          <Pdf
-            source={{ uri: selectedFile.uri }}
-            onLoadComplete={(numberOfPages) => {
-              setNewBookTotalPages(numberOfPages.toString());
-              setIsCountingPages(false);
-            }}
-            onError={() => setIsCountingPages(false)}
-            style={{ width: 10, height: 10 }}
-          />
+      {/* Modal for PDF counting - only visible for a split second when triggered */}
+      <Modal visible={isCountingPages} transparent>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#FFF" />
+          <Text style={{ color: '#FFF', marginTop: 10 }}>Analyzing PDF...</Text>
+          {selectedFile && (
+            <Pdf
+              source={{ uri: selectedFile.uri }}
+              onLoadComplete={(numberOfPages) => {
+                setNewBookTotalPages(numberOfPages.toString());
+                setIsCountingPages(false);
+              }}
+              onError={() => setIsCountingPages(false)}
+              style={{ width: 1, height: 1, opacity: 0 }}
+            />
+          )}
         </View>
-      )}
+      </Modal>
     </SafeAreaView>
   );
 }
