@@ -412,14 +412,19 @@ export default function LibraryScreen() {
 
             {/* Hidden PDF for automatic page counting */}
             {selectedFile && newBookFileType === 'pdf' && isCountingPages && (
-              <View style={{ position: 'absolute', opacity: 0, width: 1, height: 1, left: -500 }}>
+              <View style={{ position: 'absolute', opacity: 0, width: 100, height: 100, left: -1000 }}>
                 <Pdf
                   source={{ uri: selectedFile.uri }}
+                  trustAllCerts={false}
                   onLoadComplete={(numberOfPages) => {
                     setNewBookTotalPages(numberOfPages.toString());
                     setIsCountingPages(false);
                   }}
-                  onError={() => setIsCountingPages(false)}
+                  onError={(error) => {
+                    console.log('Counting Error:', error);
+                    setIsCountingPages(false);
+                  }}
+                  style={{ width: 100, height: 100 }}
                 />
               </View>
             )}

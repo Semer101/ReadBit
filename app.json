@@ -44,7 +44,7 @@
           "android": {
             "enableProguardInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
-            "extraProguardRules": "-keep class com.shockwave.pdfium.** { *; } -keep class com.shockwave.pdfium.util.** { *; }"
+            "extraProguardRules": "-keep class com.shockwave.pdfium.** { *; } -keep class com.shockwave.pdfium.util.** { *; } -keep class org.vudroid.** { *; } -keep class com.github.barteksc.pdfviewer.** { *; }"
           }
         }
       ]
@@ -54,7 +54,8 @@
       "reactCompiler": true
     },
     "updates": {
-      "enabled": false
+      "enabled": false,
+      "checkAutomatically": "NEVER"
     },
     "extra": {
       "router": {},
