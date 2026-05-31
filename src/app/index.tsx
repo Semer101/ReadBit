@@ -38,6 +38,7 @@ export default function LibraryScreen() {
   const [targetDate, setTargetDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [isCountingPages, setIsCountingPages] = useState(false);
 
   // Active Reader states
   const [readerVisible, setReaderVisible] = useState(false);
@@ -93,6 +94,9 @@ export default function LibraryScreen() {
         setNewBookAuthor(parts[1] || 'Unknown Author');
         const isPdf = file.name.toLowerCase().endsWith('.pdf');
         setNewBookFileType(isPdf ? 'pdf' : 'epub');
+        if (isPdf) {
+          setIsCountingPages(true);
+        }
       }
     } catch (err) {
       console.error('Document picker error:', err);
@@ -407,17 +411,15 @@ export default function LibraryScreen() {
             )}
 
             {/* Hidden PDF for automatic page counting */}
-            {selectedFile && newBookFileType === 'pdf' && (
-              <View style={{ position: 'absolute', opacity: 0, width: 1, height: 1, left: -100 }}>
+            {selectedFile && newBookFileType === 'pdf' && isCountingPages && (
+              <View style={{ position: 'absolute', opacity: 0, width: 1, height: 1, left: -500 }}>
                 <Pdf
                   source={{ uri: selectedFile.uri }}
-                  trustAllCerts={false}
                   onLoadComplete={(numberOfPages) => {
                     setNewBookTotalPages(numberOfPages.toString());
+                    setIsCountingPages(false);
                   }}
-                  onError={(error) => {
-                    console.warn('PDF Page Count Error:', error);
-                  }}
+                  onError={() => setIsCountingPages(false)}
                 />
               </View>
             )}
