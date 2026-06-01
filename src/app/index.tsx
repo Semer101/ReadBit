@@ -20,6 +20,8 @@ import { SupabaseService } from '../services/supabase';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { NotificationService } from '../services/notifications';
 import { PdfReader } from '../components/pdf-reader';
+import { EpubReader } from '../components/epub-reader';
+import { Onboarding } from '../components/onboarding';
 
 const { width } = Dimensions.get('window');
 
@@ -28,6 +30,7 @@ export default function LibraryScreen() {
   const [booksWithPacing, setBooksWithPacing] = useState<any[]>([]);
   const [streak, setStreak] = useState<Streak | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Modal states
   const [addBookModalVisible, setAddBookModalVisible] = useState(false);
@@ -50,9 +53,21 @@ export default function LibraryScreen() {
   const [sessionStartTime, setSessionStartTime] = useState<number>(0);
 
   useEffect(() => {
+    checkFirstRun();
     loadData();
     setupNotifications();
   }, []);
+
+  const checkFirstRun = async () => {
+    const books = await StorageService.getBooks();
+    if (books.length === 0) {
+      setShowOnboarding(true);
+    }
+  };
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+  };
 
   const setupNotifications = async () => {
     await NotificationService.registerForPushNotificationsAsync();
@@ -217,6 +232,10 @@ export default function LibraryScreen() {
       setLoading(false);
     }
   };
+
+  if (showOnboarding) {
+    return <Onboarding onComplete={handleOnboardingComplete} />;
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -507,14 +526,7 @@ export default function LibraryScreen() {
               }}
             />
           ) : (
-            <ScrollView contentContainerStyle={styles.readerScroll}>
-              <Text style={[styles.readerContentText, { fontSize: readerFontSize, color: readerTheme === 'light' ? '#374151' : '#D1D5DB' }]}>
-                {`Chapter ${Math.ceil(readerCurrentPage / 10)}: Section ${readerCurrentPage}\n\n` +
-                  `This is simulated content parsed from your EPUB file: ${activeBook?.title}.\n\n` +
-                  `Consistency is the key to building any reading habit. The Accountability Engine is currently monitoring this session, and your daily reading pacing adjusts automatically based on your customized target completion dates.`
-                }
-              </Text>
-            </ScrollView>
+            <EpubReader uri={activeBook?.filePath || ''} />
           )}
 
           {/* Footer Controls */}
